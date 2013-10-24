@@ -3,8 +3,8 @@ $(".tty").prepend( '<div style="float: right;"><canvas id="television" width="19
 bhack = {
 	tv: {
 		canvas: null,
-		width: 96,
-		height: 64,
+		width: 256,
+		height: 240,
 		pos: 0,
 		
 		fill: function(col) {
