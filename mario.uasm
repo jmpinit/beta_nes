@@ -1,0 +1,168 @@
+.include "/shared/bsim/beta.uasm"          // include instruction macros
+
+// TELEVISION
+.macro TV_CLEAR() PRIV_OP (99)
+.macro TV_POS() PRIV_OP (100)
+.macro TV_OUT() PRIV_OP (101)
+
+// MACROS
+.macro DEC(R) SUBC(R, 1, R)
+.macro INC(R) ADDC(R, 1, R)
+
+// INTERRUPTS
+
+. = VEC_RESET
+	BR(int_reset)
+
+// MAIN
+
+. = 20
+
+int_reset:
+	BR(__start)
+
+__start:
+	LDR(stack_base, SP)	// setup stack
+	
+	// setup tv
+	TV_CLEAR()
+	
+	BR(draw_mario, LP)	// draw our hero
+
+__halt:	HALT()
+	BR(__halt)
+
+pixel_i = R6
+
+line = R7
+line_i = R8
+line_ptr = R9
+
+color = R10
+color_i = R11
+color_ptr = R12
+
+draw_mario:
+color_loop_init:
+	CMOVE(0, color_i)
+color_loop:
+	// lookup color
+	MOVE(color_i, R0)
+	MULC(R0, 4, R0)
+	ADDC(R0, mario_colors, R0)
+	LD(R0, 0, color)
+	
+	// set bitmap pointer
+	MULC(color_i, 16*4, color_ptr)
+	ADDC(color_ptr, mario_bitmap, color_ptr)
+	MOVE(color_ptr, line_ptr)
+line_loop_init:
+	CMOVE(0, line_i)
+line_loop:
+	// get line
+	LD(line_ptr, 0, line)
+	
+	// if line is zero, skip it
+	BEQ(line, line_loop_end, R31)
+pixel_loop_init:
+	CMOVE(0, pixel_i)
+pixel_loop:
+	// get pixel
+	SHLC(line, 1, line)
+	ANDC(line, 0x800, R0)
+	SHRC(R0, 11, R0)
+	BEQ(R0, pixel_alpha, R31)
+pixel_colored:
+	MOVE(color, R0)
+	BR(pixel_out)
+pixel_alpha:
+	CMOVE(0, R0)
+	SUBC(R0, 1, R0)
+pixel_out:
+	TV_OUT()
+pixel_loop_end:
+	INC(pixel_i)
+	CMPEQC(pixel_i, 12, R0)
+	BEQ(R0, pixel_loop)
+line_loop_end:
+	// go to next line in mem
+	ADDC(line_ptr, 4, line_ptr)
+	
+	// put tv on next line
+	SUB(line_ptr, color_ptr, R0)
+	MULC(R0, 96/4, R0)
+	TV_POS()
+	
+	INC(line_i)
+	CMPEQC(line_i, 16, R0)
+	BEQ(R0, line_loop)
+color_loop_end:
+	INC(color_i)
+	CMPEQC(color_i, 3, R0)
+	BEQ(R0, color_loop)
+	
+	RTN()
+	
+mario_colors:
+	LONG(0x16)	// NES red
+	LONG(0x09)	// NES green
+	LONG(0x38)	// NES yellow
+
+mario_bitmap:
+mario_red:
+	LONG(0x1f0)
+	LONG(0x3fe)
+	LONG(0x0)
+	LONG(0x0)
+	LONG(0x0)
+	LONG(0x0)
+	LONG(0x0)
+	LONG(0x80)
+	LONG(0x90)
+	LONG(0xf0)
+	LONG(0x168)
+	LONG(0x1f8)
+	LONG(0x3fc)
+	LONG(0x39c)
+	LONG(0x0)
+	LONG(0x0)
+  
+mario_green:
+	LONG(0x0)
+	LONG(0x0)
+	LONG(0x390)
+	LONG(0x510)
+	LONG(0x588)
+	LONG(0x61e)
+	LONG(0x0)
+	LONG(0x370)
+	LONG(0x76e)
+	LONG(0xf0f)
+	LONG(0x204)
+	LONG(0x0)
+	LONG(0x0)
+	LONG(0x0)
+	LONG(0x70e)
+	LONG(0xf0f)
+
+mario_yellow:
+	LONG(0x0)
+	LONG(0x0)
+	LONG(0x68)
+	LONG(0x2ee)
+	LONG(0x277)
+	LONG(0x1e0)
+	LONG(0x1fc)
+	LONG(0x0)
+	LONG(0x0)
+	LONG(0x0)
+	LONG(0xc93)
+	LONG(0xe07)
+	LONG(0xc03)
+	LONG(0x0)
+	LONG(0x0)
+	LONG(0x0)
+
+stack_base:
+    LONG(.+4)      // Pointer to bottom of stack
+    . = .+0x1000   // Reserve space for stack
