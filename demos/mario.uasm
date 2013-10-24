@@ -1,9 +1,5 @@
 .include "/shared/bsim/beta.uasm"          // include instruction macros
-
-// TELEVISION
-.macro TV_CLEAR() PRIV_OP (99)
-.macro TV_POS() PRIV_OP (100)
-.macro TV_OUT() PRIV_OP (101)
+.include "tv.uasm"
 
 // MACROS
 .macro DEC(R) SUBC(R, 1, R)
