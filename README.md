@@ -1,6 +1,8 @@
 beta_nes
 ========
 
+![](doc/beta_nes.gif)
+
 Bookmarklet for turning the online Beta simulator for MIT's 6.004 class into an NES-like system.
 
 why?
